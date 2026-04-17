@@ -1,6 +1,7 @@
 import { CONFIG } from './config.js';
 
-let isSyncing = false;
+let activeMap = null;
+let syncTimeout = null;
 const globalMaps = {};
 let currentMapType = CONFIG.defaultType; // 'street', 'hybrid', 'satellite'
 
@@ -15,8 +16,12 @@ function showMissingKeyWarning(mapName, containerId) {
 }
 
 function handleSyncEvent(sourceMap, centerStr, zoomStr) {
-    if (isSyncing) return;
-    isSyncing = true;
+    if (activeMap && activeMap !== sourceMap) return;
+    activeMap = sourceMap;
+    
+    // Auto-release the source lock after settling
+    if (syncTimeout) clearTimeout(syncTimeout);
+    syncTimeout = setTimeout(() => { activeMap = null; }, 800);
     
     const center = JSON.parse(centerStr);
     const zoom = parseFloat(zoomStr);
@@ -32,7 +37,7 @@ function handleSyncEvent(sourceMap, centerStr, zoomStr) {
     }
     if (globalMaps.apple && sourceMap !== 'apple') {
         const coord = new mapkit.Coordinate(center.lat, center.lng);
-        const spanVal = Math.pow(2, 15 - zoom) / 100;
+        const spanVal = 360 / Math.pow(2, zoom);
         const span = new mapkit.CoordinateSpan(spanVal, spanVal);
         globalMaps.apple.region = new mapkit.CoordinateRegion(coord, span);
     }
@@ -42,9 +47,6 @@ function handleSyncEvent(sourceMap, centerStr, zoomStr) {
     if (globalMaps.yandex && sourceMap !== 'yandex') {
         globalMaps.yandex.setCenter([center.lat, center.lng], zoom, { checkZoomRange: false, duration: 0 });
     }
-
-    // Debounce state un-locking
-    setTimeout(() => { isSyncing = false; }, 200);
 }
 
 // 1. Initialize OpenStreetMap (Leaflet)
@@ -112,15 +114,15 @@ function initApple() {
     });
     
     const coord = new mapkit.Coordinate(CONFIG.center.lat, CONFIG.center.lng);
-    const spanVal = Math.pow(2, 15 - CONFIG.zoom) / 100;
+    const spanVal = 360 / Math.pow(2, CONFIG.zoom);
     const span = new mapkit.CoordinateSpan(spanVal, spanVal);
     map.region = new mapkit.CoordinateRegion(coord, span);
 
     globalMaps.apple = map;
 
-    map.addEventListener('region-change-end', () => {
+    map.addEventListener('region-change', () => {
         const center = map.centerCoordinate;
-        const zoom = 15 - Math.log2(map.region.span.latitudeDelta * 100);
+        const zoom = Math.log2(360 / map.region.span.longitudeDelta);
         handleSyncEvent('apple', JSON.stringify({ lat: center.latitude, lng: center.longitude }), zoom);
     });
 }
