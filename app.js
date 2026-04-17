@@ -37,7 +37,9 @@ function handleSyncEvent(sourceMap, centerStr, zoomStr) {
     }
     if (globalMaps.apple && sourceMap !== 'apple') {
         const coord = new mapkit.Coordinate(center.lat, center.lng);
-        const spanVal = 360 / Math.pow(2, zoom);
+        const mapEl = document.getElementById('map-apple');
+        const widthModifier = mapEl ? (mapEl.clientWidth / 256) : 2;
+        const spanVal = (360 / Math.pow(2, zoom)) * widthModifier;
         const span = new mapkit.CoordinateSpan(spanVal, spanVal);
         globalMaps.apple.region = new mapkit.CoordinateRegion(coord, span);
     }
@@ -121,8 +123,10 @@ function initApple() {
     globalMaps.apple = map;
 
     map.addEventListener('region-change-end', () => {
-        const center = map.centerCoordinate;
-        const zoom = Math.log2(360 / map.region.span.longitudeDelta);
+        const center = map.center;
+        const mapEl = document.getElementById('map-apple');
+        const widthModifier = mapEl ? (mapEl.clientWidth / 256) : 2;
+        const zoom = Math.log2(360 / (map.region.span.longitudeDelta / widthModifier));
         handleSyncEvent('apple', JSON.stringify({ lat: center.latitude, lng: center.longitude }), zoom);
     });
 }
