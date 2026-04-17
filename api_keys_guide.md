@@ -39,3 +39,43 @@ Once you have a key, paste it into the `config.js` file at the root of the proje
 
 ### 6. OpenStreetMap
 You're in luck! OpenStreetMap combined with Leaflet requires zero API keys to use the default tiles. However, heavy usage is frowned upon, so if you deploy this to production, you'll want to use your own tile server or a paid provider.
+
+---
+
+## How to Secure Your API Keys for GitHub Pages
+
+Since your app is statically hosted, your `config.js` file is publicly readable. To prevent malicious users from stealing your API keys to run up billing charges, you must apply **HTTP Referrer Restrictions** to each key. 
+
+This tells the map providers to immediately reject any API request that does not originate from your specific `manolides.github.io` domain.
+
+### Google Maps
+1. Go to the [Google Cloud Console Credentials Page](https://console.cloud.google.com/projectselector2/apis/credentials).
+2. Select your project and click on your OmniMap API Key.
+3. Under **Application restrictions**, select **Websites**.
+4. In the Website restrictions box, click **Add Item** and enter `*manolides.github.io/*`.
+5. Click Save. Note: It may take up to 5 minutes to propagate.
+
+### Mapbox
+1. Go to your [Mapbox Tokens Dashboard](https://account.mapbox.com/access-tokens/).
+2. You cannot restrict the 'Default Public Token', so click **Create a token**.
+3. Under **Token restrictions > URLs**, enter `https://manolides.github.io/`.
+4. Click **Create token** and copy this *new* token.
+5. Update your `app.js` or `config.js` with this restricted token and push to GitHub!
+
+### Azure Maps
+1. Go to your [Azure Portal](https://portal.azure.com/).
+2. Search for **Azure Maps accounts** and click your resource.
+3. On the left navigation bar, go to **Authentication** (or CORS).
+4. For stricter security, go to **CORS (Cross-Origin Resource Sharing)**.
+5. Under **Allowed origins**, add `https://manolides.github.io` and click **Save**. 
+*(Azure uses a shared key approach, so CORS is your first line of defense for web applications).*
+
+### Yandex Maps
+1. In the [Yandex Developer Portal](https://developer.tech.yandex.com/), go to your API key.
+2. Select **Restrictions** for your specific key.
+3. Find the section for **HTTP Referrers** and add `https://manolides.github.io/*`.
+4. Save the changes.
+
+### Apple Maps (MapKit JS)
+1. MapKit JS security works differently. The Apple Maps token generated via Python natively embeds an **Origin** verification if programmed directly, but the generic JWT we built doesn't implicitly restrict by domain natively unless we added an `origin` claim during generation. 
+2. Because the script generates a 1-year JWT token instead of raw dynamic secret keys, the risk is lower than usage-based billing APIs if you use an isolated team identifier, but it's still best to rotate the `.p8` key if you suspect compromise. To completely lock this down, you can update the Python generator to include a custom `"origin": "https://manolides.github.io"` property in the JWT payload!
