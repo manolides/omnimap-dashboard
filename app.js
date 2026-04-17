@@ -120,7 +120,7 @@ function initApple() {
 
     globalMaps.apple = map;
 
-    map.addEventListener('region-change', () => {
+    map.addEventListener('region-change-end', () => {
         const center = map.centerCoordinate;
         const zoom = Math.log2(360 / map.region.span.longitudeDelta);
         handleSyncEvent('apple', JSON.stringify({ lat: center.latitude, lng: center.longitude }), zoom);
