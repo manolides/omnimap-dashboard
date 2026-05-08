@@ -1,5 +1,17 @@
 import { CONFIG } from './config.js';
 
+// Parse URL hash for deep linking (e.g., #zoom/lat/lng)
+const hash = window.location.hash.substring(1);
+const hashParts = hash.split('/');
+if (hashParts.length === 3) {
+    const [z, lat, lng] = hashParts.map(Number);
+    if (!isNaN(z) && !isNaN(lat) && !isNaN(lng)) {
+        CONFIG.zoom = z;
+        CONFIG.center.lat = lat;
+        CONFIG.center.lng = lng;
+    }
+}
+
 let activeMap = null;
 let syncTimeout = null;
 const globalMaps = {};
@@ -48,6 +60,12 @@ function handleSyncEvent(sourceMap, centerStr, zoomStr) {
     }
     if (globalMaps.yandex && sourceMap !== 'yandex') {
         globalMaps.yandex.setCenter([center.lat, center.lng], zoom, { checkZoomRange: false, duration: 0 });
+    }
+
+    // Update the URL hash for deep linking
+    const hashStr = `#${zoom.toFixed(2)}/${center.lat.toFixed(6)}/${center.lng.toFixed(6)}`;
+    if (window.location.hash !== hashStr) {
+        window.history.replaceState(null, '', hashStr);
     }
 }
 
