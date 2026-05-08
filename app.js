@@ -61,6 +61,18 @@ function handleSyncEvent(sourceMap, centerStr, zoomStr) {
     if (globalMaps.yandex && sourceMap !== 'yandex') {
         globalMaps.yandex.setCenter([center.lat, center.lng], zoom, { checkZoomRange: false, duration: 0 });
     }
+    if (globalMaps.naver && sourceMap !== 'naver') {
+        globalMaps.naver.setCenter(new naver.maps.LatLng(center.lat, center.lng));
+        globalMaps.naver.setZoom(zoom);
+    }
+    if (globalMaps.kakao && sourceMap !== 'kakao') {
+        globalMaps.kakao.setCenter(new kakao.maps.LatLng(center.lat, center.lng));
+        globalMaps.kakao.setLevel(Math.max(1, 21 - Math.round(zoom)));
+    }
+    if (globalMaps.tmap && sourceMap !== 'tmap') {
+        globalMaps.tmap.setCenter(new Tmapv2.LatLng(center.lat, center.lng));
+        globalMaps.tmap.setZoom(Math.round(zoom));
+    }
 
     // Update the URL hash for deep linking
     const hashStr = `#${zoom.toFixed(2)}/${center.lat.toFixed(6)}/${center.lng.toFixed(6)}`;
@@ -256,6 +268,87 @@ function loadYandex() {
     document.head.appendChild(script);
 }
 
+// 7. Initialize Naver Maps
+window.initNaver = function() {
+    if (!CONFIG.keys.naverMaps || CONFIG.keys.naverMaps.includes('YOUR_')) return;
+    const map = new naver.maps.Map('map-naver', {
+        center: new naver.maps.LatLng(CONFIG.center.lat, CONFIG.center.lng),
+        zoom: CONFIG.zoom,
+        mapTypeId: naver.maps.MapTypeId.HYBRID
+    });
+    globalMaps.naver = map;
+    naver.maps.Event.addListener(map, 'idle', function() {
+        const center = map.getCenter();
+        handleSyncEvent('naver', JSON.stringify({ lat: center.lat(), lng: center.lng() }), map.getZoom());
+    });
+};
+function loadNaver() {
+    if (!CONFIG.keys.naverMaps || CONFIG.keys.naverMaps.includes('YOUR_')) {
+        showMissingKeyWarning('Naver Maps', 'map-naver');
+        return;
+    }
+    const script = document.createElement('script');
+    script.src = `https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${CONFIG.keys.naverMaps}&callback=initNaver`;
+    document.head.appendChild(script);
+}
+
+// 8. Initialize Kakao Maps
+window.initKakao = function() {
+    if (!CONFIG.keys.kakaoMaps || CONFIG.keys.kakaoMaps.includes('YOUR_')) return;
+    kakao.maps.load(function() {
+        const container = document.getElementById('map-kakao');
+        const map = new kakao.maps.Map(container, {
+            center: new kakao.maps.LatLng(CONFIG.center.lat, CONFIG.center.lng),
+            level: Math.max(1, 21 - CONFIG.zoom),
+            mapTypeId: kakao.maps.MapTypeId.HYBRID
+        });
+        globalMaps.kakao = map;
+        kakao.maps.event.addListener(map, 'idle', function() {
+            const center = map.getCenter();
+            handleSyncEvent('kakao', JSON.stringify({ lat: center.getLat(), lng: center.getLng() }), 21 - map.getLevel());
+        });
+    });
+};
+function loadKakao() {
+    if (!CONFIG.keys.kakaoMaps || CONFIG.keys.kakaoMaps.includes('YOUR_')) {
+        showMissingKeyWarning('Kakao Maps', 'map-kakao');
+        return;
+    }
+    const script = document.createElement('script');
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${CONFIG.keys.kakaoMaps}&autoload=false`;
+    script.onload = window.initKakao;
+    document.head.appendChild(script);
+}
+
+// 9. Initialize TMap
+window.initTMap = function() {
+    if (!CONFIG.keys.tMaps || CONFIG.keys.tMaps.includes('YOUR_')) return;
+    const map = new Tmapv2.Map("map-tmap", {
+        center: new Tmapv2.LatLng(CONFIG.center.lat, CONFIG.center.lng),
+        zoom: CONFIG.zoom,
+        mapType: Tmapv2.Map.MapType.HYBRID
+    });
+    globalMaps.tmap = map;
+    map.addListener("dragend", function() {
+        const center = map.getCenter();
+        handleSyncEvent('tmap', JSON.stringify({ lat: center.lat(), lng: center.lng() }), map.getZoom());
+    });
+    map.addListener("zoom_end", function() {
+        const center = map.getCenter();
+        handleSyncEvent('tmap', JSON.stringify({ lat: center.lat(), lng: center.lng() }), map.getZoom());
+    });
+};
+function loadTMap() {
+    if (!CONFIG.keys.tMaps || CONFIG.keys.tMaps.includes('YOUR_')) {
+        showMissingKeyWarning('TMaps', 'map-tmap');
+        return;
+    }
+    const script = document.createElement('script');
+    script.src = `https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=${CONFIG.keys.tMaps}`;
+    script.onload = window.initTMap;
+    document.head.appendChild(script);
+}
+
 // UI LOGIC FOR LAYOUT TOGGLE
 function initLayoutToggle() {
     const btn = document.getElementById('layout-toggle-btn');
@@ -362,20 +455,25 @@ function updateAllMapTypes(type) {
         const yMap = { 'street': 'yandex#map', 'hybrid': 'yandex#hybrid', 'satellite': 'yandex#satellite' };
         globalMaps.yandex.setType(yMap[type]);
     }
+
+    // Naver
+    if (globalMaps.naver && window.naver) {
+        const nMap = { 'street': naver.maps.MapTypeId.NORMAL, 'hybrid': naver.maps.MapTypeId.HYBRID, 'satellite': naver.maps.MapTypeId.SATELLITE };
+        globalMaps.naver.setMapTypeId(nMap[type]);
+    }
+
+    // Kakao
+    if (globalMaps.kakao && window.kakao) {
+        const kMap = { 'street': kakao.maps.MapTypeId.ROADMAP, 'hybrid': kakao.maps.MapTypeId.HYBRID, 'satellite': kakao.maps.MapTypeId.SKYVIEW };
+        globalMaps.kakao.setMapTypeId(kMap[type]);
+    }
+
+    // TMap
+    if (globalMaps.tmap && window.Tmapv2) {
+        const tMap = { 'street': Tmapv2.Map.MapType.ROAD, 'hybrid': Tmapv2.Map.MapType.HYBRID, 'satellite': Tmapv2.Map.MapType.SATELLITE };
+        globalMaps.tmap.setMapType(tMap[type]);
+    }
 }
-
-// BOOTSTRAP
-try { initOSM(); } catch (e) { console.error('OSM Init Error:', e); }
-try { initMapbox(); } catch (e) { console.error('Mapbox Init Error:', e); }
-try { initApple(); } catch (e) { console.error('Apple Init Error:', e); }
-
-loadGoogle();
-loadAzure();
-loadYandex();
-
-try { initSearch(); } catch (e) { console.error('Search Init Error:', e); }
-try { initMapTypeControl(); } catch (e) { console.error('Map Type Init Error:', e); }
-try { initLayoutToggle(); } catch (e) { console.error('Layout Toggle Init Error:', e); }
 
 function initOpenTabs() {
     const btn = document.getElementById('open-tabs-btn');
@@ -416,15 +514,80 @@ function initOpenTabs() {
             bType = 'h';
         }
 
-        const urls = [
-            `https://maps.google.com/?ll=${lat},${lng}&z=${zoom}&t=${gType}`,
-            `https://maps.apple.com/?ll=${lat},${lng}&z=${zoom}&t=${aType}`,
-            `https://www.openstreetmap.org/#map=${zInt}/${lat}/${lng}`,
-            `https://yandex.com/maps/?ll=${lng}%2C${lat}&z=${zInt}&l=${yType}`,
-            `https://www.bing.com/maps?cp=${lat}~${lng}&lvl=${zInt}&sty=${bType}`
-        ];
-
+        const urls = [];
+        const activeProviders = Array.from(document.querySelectorAll('.map-selector')).map(s => s.value);
+        
+        if (activeProviders.includes('google')) urls.push(`https://maps.google.com/?ll=${lat},${lng}&z=${zoom}&t=${gType}`);
+        if (activeProviders.includes('apple')) urls.push(`https://maps.apple.com/?ll=${lat},${lng}&z=${zoom}&t=${aType}`);
+        if (activeProviders.includes('osm')) urls.push(`https://www.openstreetmap.org/#map=${zInt}/${lat}/${lng}`);
+        if (activeProviders.includes('yandex')) urls.push(`https://yandex.com/maps/?ll=${lng}%2C${lat}&z=${zInt}&l=${yType}`);
+        if (activeProviders.includes('azure')) urls.push(`https://www.bing.com/maps?cp=${lat}~${lng}&lvl=${zInt}&sty=${bType}`);
+        
+        if (activeProviders.includes('naver')) urls.push(`https://map.naver.com/v5/?c=${lng},${lat},${zInt},0,0,0,dh`);
+        if (activeProviders.includes('kakao')) urls.push(`https://map.kakao.com/link/map/${lat},${lng}`);
+        
         urls.forEach(url => window.open(url, '_blank'));
     });
 }
+
+function initSlots() {
+    const pool = document.getElementById('map-pool');
+    const mapProviders = ['google', 'apple', 'mapbox', 'azure', 'yandex', 'osm', 'naver', 'kakao', 'tmap'];
+    const providerNames = {
+        'google': 'Google Maps', 'apple': 'Apple Maps', 'mapbox': 'Mapbox',
+        'azure': 'Azure Maps', 'yandex': 'Yandex Maps', 'osm': 'OpenStreetMap',
+        'naver': 'Naver Maps', 'kakao': 'Kakao Maps', 'tmap': 'TMaps'
+    };
+    const defaultSlots = ['google', 'apple', 'mapbox', 'azure', 'yandex', 'osm'];
+
+    for (let i = 1; i <= 6; i++) {
+        const slot = document.getElementById(`slot-${i}`);
+        const select = slot.querySelector('.map-selector');
+        
+        mapProviders.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.text = providerNames[p];
+            select.appendChild(opt);
+        });
+        
+        const defaultProvider = defaultSlots[i-1];
+        select.value = defaultProvider;
+        
+        const wrapper = document.getElementById(`wrapper-${defaultProvider}`);
+        slot.insertBefore(wrapper, select);
+        
+        select.addEventListener('change', (e) => {
+            const newProvider = e.target.value;
+            const currentWrapper = slot.querySelector('.map-wrapper');
+            pool.appendChild(currentWrapper);
+            
+            const newWrapper = document.getElementById(`wrapper-${newProvider}`);
+            slot.insertBefore(newWrapper, select);
+            
+            setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+                if (globalMaps.osm) globalMaps.osm.invalidateSize();
+                if (globalMaps.mapbox) globalMaps.mapbox.resize();
+            }, 50);
+        });
+    }
+}
+
+// BOOTSTRAP
+try { initSlots(); } catch (e) { console.error('Slots Init Error:', e); }
+try { initOSM(); } catch (e) { console.error('OSM Init Error:', e); }
+try { initMapbox(); } catch (e) { console.error('Mapbox Init Error:', e); }
+try { initApple(); } catch (e) { console.error('Apple Init Error:', e); }
+
+loadGoogle();
+loadAzure();
+loadYandex();
+loadNaver();
+loadKakao();
+loadTMap();
+
+try { initSearch(); } catch (e) { console.error('Search Init Error:', e); }
+try { initMapTypeControl(); } catch (e) { console.error('Map Type Init Error:', e); }
+try { initLayoutToggle(); } catch (e) { console.error('Layout Toggle Init Error:', e); }
 try { initOpenTabs(); } catch (e) { console.error('Open Tabs Init Error:', e); }

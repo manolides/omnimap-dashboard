@@ -40,6 +40,35 @@ Once you have a key, paste it into the `config.js` file at the root of the proje
 ### 6. OpenStreetMap
 You're in luck! OpenStreetMap combined with Leaflet requires zero API keys to use the default tiles. However, heavy usage is frowned upon, so if you deploy this to production, you'll want to use your own tile server or a paid provider.
 
+### 7. Naver Maps
+1. Go to the [Naver Cloud Platform Console](https://console.ncloud.com/).
+2. Create an account and log in.
+3. Go to **Services** > **AI·NAVER API** > **Application**.
+4. Click **Register Application**.
+5. Select **Web Dynamic Map** under the Maps category.
+6. Under Service Environment, add your Website URLs (e.g., `http://localhost:8000` and `https://manolides.github.io`).
+7. Click Register.
+8. Copy the **Client ID** from your application details.
+9. Paste it into `config.keys.naverMaps`.
+
+### 8. Kakao Maps
+1. Go to the [Kakao Developers Portal](https://developers.kakao.com/).
+2. Log in and go to **My Application**.
+3. Click **Add an application**.
+4. Once created, click on your app and go to **Platform** in the left menu.
+5. Click **Web** and register your domain (e.g., `http://localhost:8000` and `https://manolides.github.io`).
+6. Go back to the App Keys section (Overview) and copy the **JavaScript key**.
+7. Paste it into `config.keys.kakaoMaps`.
+
+### 9. TMaps
+1. Go to the [SK Open API Portal](https://openapi.sk.com/).
+2. Create an account and log in.
+3. Go to **My Project** and click **Create Project**.
+4. Add the **Tmap API** to your project.
+5. Register your Web service domains (e.g., `http://localhost:8000` and `https://manolides.github.io`).
+6. Copy your **App Key**.
+7. Paste it into `config.keys.tMaps`.
+
 ---
 
 ## How to Secure Your API Keys for GitHub Pages
@@ -79,3 +108,6 @@ This tells the map providers to immediately reject any API request that does not
 ### Apple Maps (MapKit JS)
 1. MapKit JS security works differently. The Apple Maps token generated via Python natively embeds an **Origin** verification if programmed directly, but the generic JWT we built doesn't implicitly restrict by domain natively unless we added an `origin` claim during generation. 
 2. Because the script generates a 1-year JWT token instead of raw dynamic secret keys, the risk is lower than usage-based billing APIs if you use an isolated team identifier, but it's still best to rotate the `.p8` key if you suspect compromise. To completely lock this down, you can update the Python generator to include a custom `"origin": "https://manolides.github.io"` property in the JWT payload!
+
+### Naver, Kakao, and TMaps
+For all three of the Korean mapping providers, domain restriction is a **mandatory** part of the application registration process. When you create your app in their developer portals, you must explicitly list `https://manolides.github.io` (and `http://localhost:8000` for testing) in the Web Platform or Environment settings. Their APIs will automatically reject any requests coming from unregistered domains, so no further action is required!
