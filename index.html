@@ -58,65 +58,31 @@
     </header>
 
     <main class="map-grid">
-        <div class="map-slot" id="slot-1">
-            <select class="map-selector"></select>
-        </div>
-        <div class="map-slot" id="slot-2">
-            <select class="map-selector"></select>
-        </div>
-        <div class="map-slot" id="slot-3">
-            <select class="map-selector"></select>
-        </div>
-        <div class="map-slot" id="slot-4">
-            <select class="map-selector"></select>
-        </div>
-        <div class="map-slot" id="slot-5">
-            <select class="map-selector"></select>
-        </div>
-        <div class="map-slot" id="slot-6">
-            <select class="map-selector"></select>
-        </div>
-    </main>
-
-    <!-- Hidden Map Pool -->
-    <div id="map-pool" style="display: none;">
-        <div id="wrapper-google" class="map-wrapper" data-provider="google">
+        <div class="map-wrapper">
             <div class="map-label">Google Maps</div>
             <div id="map-google" class="map-container"></div>
         </div>
-        <div id="wrapper-apple" class="map-wrapper" data-provider="apple">
+        <div class="map-wrapper">
             <div class="map-label">Apple Maps</div>
             <div id="map-apple" class="map-container"></div>
         </div>
-        <div id="wrapper-mapbox" class="map-wrapper" data-provider="mapbox">
+        <div class="map-wrapper">
             <div class="map-label">Mapbox</div>
             <div id="map-mapbox" class="map-container"></div>
         </div>
-        <div id="wrapper-azure" class="map-wrapper" data-provider="azure">
+        <div class="map-wrapper">
             <div class="map-label">Azure Maps</div>
             <div id="map-azure" class="map-container"></div>
         </div>
-        <div id="wrapper-yandex" class="map-wrapper" data-provider="yandex">
+        <div class="map-wrapper">
             <div class="map-label">Yandex Maps</div>
             <div id="map-yandex" class="map-container"></div>
         </div>
-        <div id="wrapper-osm" class="map-wrapper" data-provider="osm">
+        <div class="map-wrapper">
             <div class="map-label">OpenStreetMap</div>
             <div id="map-osm" class="map-container"></div>
         </div>
-        <div id="wrapper-naver" class="map-wrapper" data-provider="naver">
-            <div class="map-label">Naver Maps</div>
-            <div id="map-naver" class="map-container"></div>
-        </div>
-        <div id="wrapper-kakao" class="map-wrapper" data-provider="kakao">
-            <div class="map-label">Kakao Maps</div>
-            <div id="map-kakao" class="map-container"></div>
-        </div>
-        <div id="wrapper-tmap" class="map-wrapper" data-provider="tmap">
-            <div class="map-label">TMaps</div>
-            <div id="map-tmap" class="map-container"></div>
-        </div>
-    </div>
+    </main>
 
     <!-- App Logic -->
     <script type="module" src="app.js?v=4"></script>
