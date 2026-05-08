@@ -376,3 +376,55 @@ loadYandex();
 try { initSearch(); } catch (e) { console.error('Search Init Error:', e); }
 try { initMapTypeControl(); } catch (e) { console.error('Map Type Init Error:', e); }
 try { initLayoutToggle(); } catch (e) { console.error('Layout Toggle Init Error:', e); }
+
+function initOpenTabs() {
+    const btn = document.getElementById('open-tabs-btn');
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+        let lat = CONFIG.center.lat;
+        let lng = CONFIG.center.lng;
+        let zoom = CONFIG.zoom;
+
+        const hash = window.location.hash.substring(1);
+        const hashParts = hash.split('/');
+        if (hashParts.length === 3) {
+            const [z, hlat, hlng] = hashParts.map(Number);
+            if (!isNaN(z) && !isNaN(hlat) && !isNaN(hlng)) {
+                zoom = z;
+                lat = hlat;
+                lng = hlng;
+            }
+        }
+
+        const zInt = Math.round(zoom);
+
+        let gType = 'm';
+        let aType = 'm';
+        let yType = 'map';
+        let bType = 'r';
+
+        if (currentMapType === 'satellite') {
+            gType = 'k';
+            aType = 'k';
+            yType = 'sat';
+            bType = 'a';
+        } else if (currentMapType === 'hybrid') {
+            gType = 'h';
+            aType = 'h';
+            yType = 'sat%2Cskl';
+            bType = 'h';
+        }
+
+        const urls = [
+            `https://maps.google.com/?ll=${lat},${lng}&z=${zoom}&t=${gType}`,
+            `https://maps.apple.com/?ll=${lat},${lng}&z=${zoom}&t=${aType}`,
+            `https://www.openstreetmap.org/#map=${zInt}/${lat}/${lng}`,
+            `https://yandex.com/maps/?ll=${lng}%2C${lat}&z=${zInt}&l=${yType}`,
+            `https://www.bing.com/maps?cp=${lat}~${lng}&lvl=${zInt}&sty=${bType}`
+        ];
+
+        urls.forEach(url => window.open(url, '_blank'));
+    });
+}
+try { initOpenTabs(); } catch (e) { console.error('Open Tabs Init Error:', e); }
